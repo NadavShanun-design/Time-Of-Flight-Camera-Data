@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ToF Image Viewer</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background: #f0f0f0; 
+            margin: 20px;
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        img { 
+            border: 2px solid #ddd; 
+            border-radius: 5px;
+            max-width: 100%;
+        }
+        .info {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f4fd;
+            border-radius: 5px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ToF Simulator - Color Mapped Image</h1>
+        <div class="info">
+            <h3>Image Information:</h3>
+            <p><strong>Format:</strong> PPM (Portable Pixmap)</p>
+            <p><strong>Dimensions:</strong> 64x64 pixels</p>
+            <p><strong>Color Map:</strong> Jet (Blue → Cyan → Yellow → Red)</p>
+            <p><strong>Data Range:</strong> 987-1951 (distance values)</p>
+            <p><strong>Description:</strong> This is a synthetic Time-of-Flight (ToF) image showing distance data color-mapped using the Jet color scheme. Blue represents closer objects, red represents farther objects.</p>
+        </div>
+        
+        <h3>Generated ToF Image:</h3>
+        <p><em>Note: The actual PPM image would be displayed here if converted to a web-compatible format.</em></p>
+        
+        <div style="background: linear-gradient(to right, #0000ff, #00ffff, #ffff00, #ff0000); height: 30px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 5px; color: white; text-shadow: 1px 1px 1px black;">Color Scale: Far (Blue) ← → Close (Red)</p>
+        </div>
+        
+        <p><strong>To view the actual image:</strong></p>
+        <ul style="text-align: left; display: inline-block;">
+            <li>Open <code>tof_image.ppm</code> in Windows Photos, Paint, or any image viewer</li>
+            <li>Or use an online PPM viewer</li>
+            <li>Or convert it to PNG/JPG using an image converter</li>
+        </ul>
+    </div>
+</body>
+</html> 
