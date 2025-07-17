@@ -22,7 +22,8 @@ import matplotlib.colors as mcolors
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QSplitter, QLabel, QPushButton, 
                              QTextEdit, QFileDialog, QMessageBox, QProgressBar,
-                             QSlider, QGroupBox, QGridLayout, QFrame, QScrollArea)
+                             QSlider, QGroupBox, QGridLayout, QFrame, QScrollArea,
+                             QTableWidget, QTableWidgetItem)
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QPixmap, QImage, QPalette, QColor, QFont, QIcon, QAction
 
@@ -654,6 +655,49 @@ class RealDataInspector(QWidget):
         self.log_text.clear()
         self.progress_bar.setValue(0)
 
+class ErrorStatsWidget(QWidget):
+    """Widget for error statistics table and plot"""
+    def __init__(self):
+        super().__init__()
+        self.setup_ui()
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        # Title
+        title = QLabel("Range Error Statistics")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("color: #fa0; font-size: 16px; font-weight: bold; padding: 8px;")
+        layout.addWidget(title)
+        # Table
+        self.table = QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["True Range (m)", "Mean Error (m)", "Uncertainty (m)"])
+        self.table.setStyleSheet("background: #181a1b; color: #fff; font-size: 12px;")
+        layout.addWidget(self.table)
+        # Plot
+        self.figure = Figure(figsize=(5, 2.5), facecolor='#0a0a0a')
+        self.canvas = FigureCanvas(self.figure)
+        layout.addWidget(self.canvas)
+        self.setLayout(layout)
+    def update_stats(self, stats_list):
+        self.table.setRowCount(len(stats_list))
+        x = []
+        y = []
+        for i, (true_range, mean_error, stddev) in enumerate(stats_list):
+            self.table.setItem(i, 0, QTableWidgetItem(f"{true_range:.2f}"))
+            self.table.setItem(i, 1, QTableWidgetItem(f"{mean_error:.5f}"))
+            self.table.setItem(i, 2, QTableWidgetItem(f"{stddev:.5f}"))
+            x.append(true_range)
+            y.append(stddev)
+        # Plot stddev vs true range
+        self.figure.clear()
+        ax = self.figure.add_subplot(111)
+        ax.plot(x, y, marker='o', color='#ffaa00', label='Uncertainty (stddev)')
+        ax.set_xlabel('True Range (m)')
+        ax.set_ylabel('Uncertainty (m)')
+        ax.set_title('Range Uncertainty vs. True Distance')
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        self.canvas.draw()
+
 class UnifiedMainWindow(QMainWindow):
     """Unified main window with everything on one page"""
     
@@ -700,9 +744,21 @@ class UnifiedMainWindow(QMainWindow):
         self.tof_viewer = UnifiedToFViewer()
         left_layout.addWidget(self.tof_viewer)
         
+        # --- CLI/console ---
+        self.cli_console = QTextEdit()
+        self.cli_console.setReadOnly(True)
+        self.cli_console.setStyleSheet("background: #111; color: #0ff; font-family: 'Courier New', monospace; font-size: 12px; border: 2px solid #222; border-radius: 5px; padding: 6px;")
+        self.cli_console.setMinimumHeight(120)
+        left_layout.addWidget(self.cli_console)
         # Data Inspector
         self.data_inspector = RealDataInspector()
         left_layout.addWidget(self.data_inspector)
+        
+        # --- Run Characterization Button ---
+        self.run_char_btn = QPushButton("Run Characterization")
+        self.run_char_btn.setStyleSheet("background: #222; color: #0fa; font-weight: bold; border: 2px solid #0fa; border-radius: 5px; padding: 8px;")
+        self.run_char_btn.clicked.connect(self.run_characterization)
+        left_layout.addWidget(self.run_char_btn)
         
         # Right panel - 3D Viewer
         right_panel = QWidget()
@@ -710,6 +766,10 @@ class UnifiedMainWindow(QMainWindow):
         
         self.point_cloud_viewer = Real3DViewer()
         right_layout.addWidget(self.point_cloud_viewer)
+        
+        # --- Error stats table and plot ---
+        self.error_stats_widget = ErrorStatsWidget()
+        right_layout.addWidget(self.error_stats_widget)
         
         # Add panels to splitter
         main_splitter.addWidget(left_panel)
@@ -803,6 +863,38 @@ class UnifiedMainWindow(QMainWindow):
             "<li>No mock data - everything real from your files</li>"
             "</ul>"
             "<p><i>Built with PyQt6 and Python</i></p>")
+
+    def run_characterization(self):
+        # Clear CLI and stats
+        self.cli_console.clear()
+        self.error_stats_widget.update_stats([])
+        # Experiment parameters
+        ranges_to_test = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]
+        samples_per_range = 100
+        num_pixels = 64
+        noise_A = 0.001
+        noise_B = 0.005
+        # Import the C++ experiment logic via subprocess or Python equivalent
+        # For now, simulate in Python for demo
+        import random
+        import numpy as np
+        stats_list = []
+        self.cli_console.append("Running Range Error Characterization...\n" + "-"*50)
+        self.cli_console.append(f"{'True Range (m)':>13} | {'Mean Error (m)':>14} | {'Uncertainty (m)':>15}")
+        self.cli_console.append("-"*50)
+        for d_true in ranges_to_test:
+            measured = []
+            sigma = noise_A + noise_B * d_true * d_true
+            for _ in range(samples_per_range):
+                frame = [random.gauss(d_true, sigma) for _ in range(num_pixels)]
+                avg = sum(frame) / len(frame)
+                measured.append(avg)
+            mean_error = np.mean([m - d_true for m in measured])
+            stddev = np.std(measured, ddof=1)
+            stats_list.append((d_true, mean_error, stddev))
+            self.cli_console.append(f"{d_true:13.2f} | {mean_error:14.5f} | {stddev:15.5f}")
+        self.cli_console.append("-"*50 + "\nCharacterization Complete.")
+        self.error_stats_widget.update_stats(stats_list)
 
 def main():
     """Main application entry point"""

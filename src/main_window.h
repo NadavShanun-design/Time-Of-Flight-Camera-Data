@@ -12,6 +12,12 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include "point_cloud_viewer.h"
+#include <QTimer>
+#include <QTabWidget>
+#include <QImage>
+#include <QTextEdit>
+#include "tof_raw_packet.h"
+#include "tof_processor.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -25,21 +31,44 @@ private slots:
     void openPointCloud();
     void generateSyntheticToF();
     void about();
+    void startSimulation();
+    void stopSimulation();
+    void onSimulationTick();
 
 private:
     void setupUI();
     void setupMenus();
     void setupToolbar();
     void setupStatusBar();
+    void update2DViews(const ToFProcessedData& data);
+    void update3DView(const ToFProcessedData& data);
+    void logPacket(const ToFRawPacket& pkt);
 
     // UI Components
     QSplitter *mainSplitter;
-    QLabel *imageLabel;
-    PointCloudViewer *pointCloudViewer;
+    QTabWidget *tabWidget;
+    QLabel *depthMapLabel;
+    QLabel *amplitudeMapLabel;
     QWidget *imageWidget;
     QWidget *pointCloudWidget;
-    
-    // Actions
+    PointCloudViewer *pointCloudViewer;
+    QTextEdit *packetLog;
+    QWidget *controlPanel;
+    QPushButton *startButton;
+    QPushButton *stopButton;
+    QLabel *fpsLabel;
+
+    // Simulation
+    QTimer *simTimer;
+    int simFPS;
+    uint32_t frameCounter;
+    uint32_t simWidth, simHeight;
+    float simNoise;
+    float simAmplitude;
+    float simSphereRadius;
+    float simSphereCenterZ;
+    bool running;
+
     QAction *openImageAction;
     QAction *openPointCloudAction;
     QAction *generateToFAction;

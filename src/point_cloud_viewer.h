@@ -7,6 +7,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <string>
+#include "ply_loader.h"
 
 class PointCloudViewer : public QWidget {
     Q_OBJECT
@@ -16,6 +17,7 @@ public:
     ~PointCloudViewer();
     
     bool loadPointCloud(const std::string& filename);
+    void setPointCloud(const std::vector<Point3D>& points); // New: live update
     void resetView();
 
 private slots:
@@ -36,4 +38,5 @@ private:
     // Point cloud data
     std::string currentPointCloudFile;
     bool hasPointCloud;
+    std::vector<Point3D> livePoints;
 }; 

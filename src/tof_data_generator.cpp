@@ -1,5 +1,6 @@
 #include "tof_data_generator.h"
 #include <random>
+#include <cmath>
 
 ToFDataGenerator::ToFDataGenerator(size_t width, size_t height, size_t numFrames)
     : width_(width), height_(height), numFrames_(numFrames) {
@@ -23,6 +24,24 @@ void ToFDataGenerator::generateFrames() {
         }
         frames_.push_back(std::move(frame));
     }
+}
+
+void ToFDataGenerator::setNoiseParameters(float A, float B) {
+    noise_A_ = A;
+    noise_B_ = B;
+}
+
+std::vector<float> ToFDataGenerator::generateFrameForTarget(float true_distance_meters, size_t num_pixels) const {
+    std::vector<float> frame(num_pixels);
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    float sigma = noise_A_ + noise_B_ * true_distance_meters * true_distance_meters;
+    std::normal_distribution<float> dist(0.0f, sigma);
+    for (size_t i = 0; i < num_pixels; ++i) {
+        float noise = dist(rng);
+        frame[i] = true_distance_meters + noise;
+    }
+    return frame;
 }
 
 std::vector<uint8_t> ToFDataGenerator::getFramePacket(size_t frameIdx, size_t offset, size_t length) const {
