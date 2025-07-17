@@ -1,0 +1,5 @@
+PyQt6>=6.4.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+open3d>=0.15.0
+pillow>=8.3.0 
